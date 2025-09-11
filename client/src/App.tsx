@@ -18,6 +18,7 @@ import Admin from "@/pages/Admin";
 import ClientAuth from "@/pages/ClientAuth";
 import ClientPortal from "@/pages/ClientPortal";
 import { Analytics } from "@/pages/Analytics";
+import { ProjectManagement } from "@/pages/ProjectManagement";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
         <Route path="/analytics" component={Analytics} />
         <Route path="/client-login" component={ClientAuth} />
         <Route path="/client-portal" component={ClientPortal} />
+        <Route path="/projects" component={ProjectManagement} />
         <Route component={NotFound} />
       </Switch>
       <Footer />

@@ -1,9 +1,22 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { User, FileText, Settings, LogOut, Folder, TrendingUp } from "lucide-react";
 
 export default function ClientPortal() {
-  const { client, logout } = useAuth();
+  const { client, logout, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background pt-16">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!client) {
     return (
@@ -41,7 +54,7 @@ export default function ClientPortal() {
           <Card className="hover:scale-105 transition-all duration-300" data-testid="card-profile">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <i className="fas fa-user text-primary mr-3"></i>
+                <User className="text-primary mr-3 h-5 w-5" />
                 Profile Information
               </CardTitle>
               <CardDescription>
@@ -61,7 +74,7 @@ export default function ClientPortal() {
           <Card className="hover:scale-105 transition-all duration-300" data-testid="card-projects">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <i className="fas fa-project-diagram text-primary mr-3"></i>
+                <Folder className="text-primary mr-3 h-5 w-5" />
                 My Projects
               </CardTitle>
               <CardDescription>
@@ -69,19 +82,21 @@ export default function ClientPortal() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                Project management system coming soon! Contact us for project updates.
+              <p className="text-muted-foreground mb-4">
+                Track project progress, milestones, and collaborate with your team.
               </p>
-              <Button className="mt-4 w-full" variant="outline" data-testid="button-contact-support">
-                Contact Support
-              </Button>
+              <Link href="/projects">
+                <Button className="w-full gradient-bg text-white hover:opacity-90" data-testid="button-view-projects">
+                  View Projects
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
           <Card className="hover:scale-105 transition-all duration-300" data-testid="card-invoices">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <i className="fas fa-file-invoice text-primary mr-3"></i>
+                <TrendingUp className="text-primary mr-3 h-5 w-5" />
                 Invoices & Payments
               </CardTitle>
               <CardDescription>

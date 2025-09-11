@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBlogPostSchema, insertContactSubmissionSchema, insertClientSchema, loginClientSchema, insertPageViewSchema } from "@shared/schema";
+import { insertBlogPostSchema, insertContactSubmissionSchema, insertClientSchema, loginClientSchema, insertPageViewSchema, insertProjectSchema, insertProjectMilestoneSchema, insertProjectTaskSchema, insertProjectCommentSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
@@ -349,6 +349,191 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch analytics overview" });
+    }
+  });
+
+  // Project Management API
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const { clientId } = req.query;
+      
+      if (clientId) {
+        const projects = await storage.getProjectsByClient(clientId as string);
+        res.json(projects);
+      } else {
+        // Admin endpoint - get all projects
+        const projects = Array.from(storage.projects.values());
+        res.json(projects);
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch projects" });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const projectData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(projectData);
+      res.status(201).json({ message: "Project created successfully", project });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid project data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create project" });
+    }
+  });
+
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch project" });
+    }
+  });
+
+  app.put("/api/projects/:id", async (req, res) => {
+    try {
+      const updateData = insertProjectSchema.partial().parse(req.body);
+      const project = await storage.updateProject(req.params.id, updateData);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.json({ message: "Project updated successfully", project });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid project data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update project" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteProject(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete project" });
+    }
+  });
+
+  // Project milestones API
+  app.get("/api/projects/:projectId/milestones", async (req, res) => {
+    try {
+      const milestones = await storage.getProjectMilestones(req.params.projectId);
+      res.json(milestones);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch milestones" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/milestones", async (req, res) => {
+    try {
+      const milestoneData = insertProjectMilestoneSchema.parse({
+        ...req.body,
+        projectId: req.params.projectId
+      });
+      const milestone = await storage.createProjectMilestone(milestoneData);
+      res.status(201).json({ message: "Milestone created successfully", milestone });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid milestone data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create milestone" });
+    }
+  });
+
+  app.put("/api/milestones/:id", async (req, res) => {
+    try {
+      const updateData = insertProjectMilestoneSchema.partial().parse(req.body);
+      const milestone = await storage.updateProjectMilestone(req.params.id, updateData);
+      if (!milestone) {
+        return res.status(404).json({ message: "Milestone not found" });
+      }
+      res.json({ message: "Milestone updated successfully", milestone });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid milestone data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update milestone" });
+    }
+  });
+
+  // Project tasks API
+  app.get("/api/projects/:projectId/tasks", async (req, res) => {
+    try {
+      const tasks = await storage.getProjectTasks(req.params.projectId);
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch tasks" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/tasks", async (req, res) => {
+    try {
+      const taskData = insertProjectTaskSchema.parse({
+        ...req.body,
+        projectId: req.params.projectId
+      });
+      const task = await storage.createProjectTask(taskData);
+      res.status(201).json({ message: "Task created successfully", task });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid task data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create task" });
+    }
+  });
+
+  app.put("/api/tasks/:id", async (req, res) => {
+    try {
+      const updateData = insertProjectTaskSchema.partial().parse(req.body);
+      const task = await storage.updateProjectTask(req.params.id, updateData);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      res.json({ message: "Task updated successfully", task });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid task data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update task" });
+    }
+  });
+
+  // Project comments API
+  app.get("/api/projects/:projectId/comments", async (req, res) => {
+    try {
+      const { includeInternal } = req.query;
+      const comments = await storage.getProjectComments(
+        req.params.projectId,
+        includeInternal === "true"
+      );
+      res.json(comments);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/comments", async (req, res) => {
+    try {
+      const commentData = insertProjectCommentSchema.parse({
+        ...req.body,
+        projectId: req.params.projectId
+      });
+      const comment = await storage.createProjectComment(commentData);
+      res.status(201).json({ message: "Comment created successfully", comment });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid comment data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create comment" });
     }
   });
 
