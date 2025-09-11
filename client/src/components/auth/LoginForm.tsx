@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
   
   const { login } = useAuth();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +30,8 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
         title: "Success",
         description: "Welcome back!",
       });
+      // Redirect to client portal after successful login
+      setLocation("/client-portal");
     } catch (error: any) {
       toast({
         title: "Error",

@@ -1,5 +1,6 @@
-import { type User, type InsertUser, type Client, type InsertClient, type ClientSession, type InsertClientSession, type BlogPost, type InsertBlogPost, type ContactSubmission, type InsertContactSubmission, type PageView, type InsertPageView, type WebsiteMetrics, type InsertWebsiteMetrics } from "@shared/schema";
+import { type User, type InsertUser, type Client, type InsertClient, type ClientSession, type InsertClientSession, type BlogPost, type InsertBlogPost, type ContactSubmission, type InsertContactSubmission, type PageView, type InsertPageView, type WebsiteMetrics, type InsertWebsiteMetrics, type Project, type InsertProject, type ProjectMilestone, type InsertProjectMilestone, type ProjectTask, type InsertProjectTask, type ProjectComment, type InsertProjectComment } from "@shared/schema";
 import { randomUUID } from "crypto";
+import bcrypt from "bcryptjs";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -35,6 +36,36 @@ export interface IStorage {
   getWebsiteMetrics(date: string): Promise<WebsiteMetrics | undefined>;
   getWebsiteMetricsRange(startDate: string, endDate: string): Promise<WebsiteMetrics[]>;
   updateWebsiteMetrics(date: string, metrics: Partial<InsertWebsiteMetrics>): Promise<WebsiteMetrics | undefined>;
+  
+  // Project management methods
+  createProject(project: InsertProject): Promise<Project>;
+  getProject(id: string): Promise<Project | undefined>;
+  getProjectsByClient(clientId: string): Promise<Project[]>;
+  updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: string): Promise<boolean>;
+  
+  // Project milestone methods
+  createProjectMilestone(milestone: InsertProjectMilestone): Promise<ProjectMilestone>;
+  getProjectMilestone(id: string): Promise<ProjectMilestone | undefined>;
+  getProjectMilestones(projectId: string): Promise<ProjectMilestone[]>;
+  updateProjectMilestone(id: string, milestone: Partial<InsertProjectMilestone>): Promise<ProjectMilestone | undefined>;
+  deleteProjectMilestone(id: string): Promise<boolean>;
+  
+  // Project task methods
+  createProjectTask(task: InsertProjectTask): Promise<ProjectTask>;
+  getProjectTask(id: string): Promise<ProjectTask | undefined>;
+  getProjectTasks(projectId: string): Promise<ProjectTask[]>;
+  getTasksByMilestone(milestoneId: string): Promise<ProjectTask[]>;
+  updateProjectTask(id: string, task: Partial<InsertProjectTask>): Promise<ProjectTask | undefined>;
+  deleteProjectTask(id: string): Promise<boolean>;
+  
+  // Project comment methods
+  createProjectComment(comment: InsertProjectComment): Promise<ProjectComment>;
+  getProjectComments(projectId: string, includeInternal?: boolean): Promise<ProjectComment[]>;
+  getTaskComments(taskId: string, includeInternal?: boolean): Promise<ProjectComment[]>;
+  getMilestoneComments(milestoneId: string, includeInternal?: boolean): Promise<ProjectComment[]>;
+  updateProjectComment(id: string, comment: Partial<InsertProjectComment>): Promise<ProjectComment | undefined>;
+  deleteProjectComment(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -45,6 +76,10 @@ export class MemStorage implements IStorage {
   private contactSubmissions: Map<string, ContactSubmission>;
   private pageViews: Map<string, PageView>;
   private websiteMetrics: Map<string, WebsiteMetrics>;
+  private projects: Map<string, Project>;
+  private projectMilestones: Map<string, ProjectMilestone>;
+  private projectTasks: Map<string, ProjectTask>;
+  private projectComments: Map<string, ProjectComment>;
 
   constructor() {
     this.users = new Map();
@@ -54,10 +89,15 @@ export class MemStorage implements IStorage {
     this.contactSubmissions = new Map();
     this.pageViews = new Map();
     this.websiteMetrics = new Map();
+    this.projects = new Map();
+    this.projectMilestones = new Map();
+    this.projectTasks = new Map();
+    this.projectComments = new Map();
     
-    // Seed with sample blog posts and analytics data
+    // Seed with sample blog posts, analytics data, and project data
     this.seedBlogPosts();
     this.seedAnalyticsData();
+    this.seedProjectData();
     
     // Clean expired sessions every hour
     setInterval(() => this.cleanExpiredSessions(), 60 * 60 * 1000);
@@ -269,6 +309,9 @@ export class MemStorage implements IStorage {
     const pageView: PageView = {
       ...insertPageView,
       id,
+      userAgent: insertPageView.userAgent || null,
+      referrer: insertPageView.referrer || null,
+      ip: insertPageView.ip || null,
       timestamp: new Date(),
     };
     this.pageViews.set(id, pageView);
@@ -292,6 +335,12 @@ export class MemStorage implements IStorage {
     const metrics: WebsiteMetrics = {
       ...insertMetrics,
       id,
+      totalViews: insertMetrics.totalViews || 0,
+      uniqueVisitors: insertMetrics.uniqueVisitors || 0,
+      bounceRate: insertMetrics.bounceRate || 0,
+      avgSessionDuration: insertMetrics.avgSessionDuration || 0,
+      topPages: insertMetrics.topPages || null,
+      topReferrers: insertMetrics.topReferrers || null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -344,6 +393,343 @@ export class MemStorage implements IStorage {
       };
       this.websiteMetrics.set(dateStr, metrics);
     }
+  }
+
+  private seedProjectData() {
+    // Create a sample client first with properly hashed password and consistent ID
+    const hashedPassword = bcrypt.hashSync("password123", 10);
+    const sampleClient: Client = {
+      id: "sample-client-jane-smith-uuid", // Fixed UUID for consistency across server restarts
+      firstName: "Jane",
+      lastName: "Smith", 
+      email: "jane.smith@example.com",
+      password: hashedPassword,
+      company: "Acme Corp",
+      phone: "+1-555-0123",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.clients.set(sampleClient.id, sampleClient);
+
+    // Create sample projects
+    const project1: Project = {
+      id: randomUUID(),
+      title: "Website Redesign",
+      description: "Complete redesign of corporate website with modern UI/UX",
+      clientId: sampleClient.id,
+      status: "active",
+      priority: "high",
+      budget: 25000_00, // $25,000 in cents
+      startDate: new Date("2024-03-01"),
+      endDate: new Date("2024-05-15"),
+      completedAt: null,
+      createdAt: new Date("2024-03-01"),
+      updatedAt: new Date(),
+    };
+    this.projects.set(project1.id, project1);
+
+    const project2: Project = {
+      id: randomUUID(),
+      title: "SEO Optimization",
+      description: "Comprehensive SEO audit and optimization campaign",
+      clientId: sampleClient.id,
+      status: "completed",
+      priority: "medium",
+      budget: 8000_00, // $8,000 in cents
+      startDate: new Date("2024-02-01"),
+      endDate: new Date("2024-03-30"),
+      completedAt: new Date("2024-03-28"),
+      createdAt: new Date("2024-02-01"),
+      updatedAt: new Date("2024-03-28"),
+    };
+    this.projects.set(project2.id, project2);
+
+    // Create sample milestones for project 1
+    const milestone1: ProjectMilestone = {
+      id: randomUUID(),
+      projectId: project1.id,
+      title: "Design Phase",
+      description: "Create wireframes, mockups, and design system",
+      status: "completed",
+      dueDate: new Date("2024-03-15"),
+      completedAt: new Date("2024-03-14"),
+      order: 1,
+      createdAt: new Date("2024-03-01"),
+      updatedAt: new Date("2024-03-14"),
+    };
+    this.projectMilestones.set(milestone1.id, milestone1);
+
+    const milestone2: ProjectMilestone = {
+      id: randomUUID(),
+      projectId: project1.id,
+      title: "Development Phase",
+      description: "Frontend and backend development implementation",
+      status: "in_progress",
+      dueDate: new Date("2024-04-30"),
+      completedAt: null,
+      order: 2,
+      createdAt: new Date("2024-03-01"),
+      updatedAt: new Date(),
+    };
+    this.projectMilestones.set(milestone2.id, milestone2);
+
+    // Create sample tasks
+    const task1: ProjectTask = {
+      id: randomUUID(),
+      projectId: project1.id,
+      milestoneId: milestone2.id,
+      title: "Homepage Development",
+      description: "Develop responsive homepage with hero section and key features",
+      status: "in_progress",
+      priority: "high",
+      estimatedHours: 20,
+      actualHours: 12,
+      dueDate: new Date("2024-04-10"),
+      completedAt: null,
+      order: 1,
+      createdAt: new Date("2024-03-15"),
+      updatedAt: new Date(),
+    };
+    this.projectTasks.set(task1.id, task1);
+
+    const task2: ProjectTask = {
+      id: randomUUID(),
+      projectId: project1.id,
+      milestoneId: milestone2.id,
+      title: "Contact Form Integration",
+      description: "Implement contact form with validation and email notifications",
+      status: "todo",
+      priority: "medium",
+      estimatedHours: 8,
+      actualHours: null,
+      dueDate: new Date("2024-04-15"),
+      completedAt: null,
+      order: 2,
+      createdAt: new Date("2024-03-15"),
+      updatedAt: new Date(),
+    };
+    this.projectTasks.set(task2.id, task2);
+
+    // Create sample comments
+    const comment1: ProjectComment = {
+      id: randomUUID(),
+      projectId: project1.id,
+      taskId: task1.id,
+      milestoneId: null,
+      authorId: sampleClient.id,
+      content: "The homepage is looking great! Could we make the hero image a bit larger?",
+      isInternal: false,
+      createdAt: new Date("2024-03-20"),
+      updatedAt: new Date("2024-03-20"),
+    };
+    this.projectComments.set(comment1.id, comment1);
+  }
+
+  // Project management methods
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const id = randomUUID();
+    const project: Project = {
+      ...insertProject,
+      id,
+      status: insertProject.status || "active",
+      priority: insertProject.priority || "medium",
+      description: insertProject.description || null,
+      budget: insertProject.budget || null,
+      startDate: insertProject.startDate || null,
+      endDate: insertProject.endDate || null,
+      completedAt: insertProject.completedAt || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.projects.set(id, project);
+    return project;
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    return this.projects.get(id);
+  }
+
+  async getProjectsByClient(clientId: string): Promise<Project[]> {
+    return Array.from(this.projects.values())
+      .filter(project => project.clientId === clientId)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async updateProject(id: string, updateData: Partial<InsertProject>): Promise<Project | undefined> {
+    const project = this.projects.get(id);
+    if (!project) return undefined;
+
+    const updatedProject: Project = {
+      ...project,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    this.projects.set(id, updatedProject);
+    return updatedProject;
+  }
+
+  async deleteProject(id: string): Promise<boolean> {
+    return this.projects.delete(id);
+  }
+
+  // Project milestone methods
+  async createProjectMilestone(insertMilestone: InsertProjectMilestone): Promise<ProjectMilestone> {
+    const id = randomUUID();
+    const milestone: ProjectMilestone = {
+      ...insertMilestone,
+      id,
+      status: insertMilestone.status || "pending",
+      description: insertMilestone.description || null,
+      dueDate: insertMilestone.dueDate || null,
+      completedAt: insertMilestone.completedAt || null,
+      order: insertMilestone.order || 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.projectMilestones.set(id, milestone);
+    return milestone;
+  }
+
+  async getProjectMilestone(id: string): Promise<ProjectMilestone | undefined> {
+    return this.projectMilestones.get(id);
+  }
+
+  async getProjectMilestones(projectId: string): Promise<ProjectMilestone[]> {
+    return Array.from(this.projectMilestones.values())
+      .filter(milestone => milestone.projectId === projectId)
+      .sort((a, b) => a.order - b.order);
+  }
+
+  async updateProjectMilestone(id: string, updateData: Partial<InsertProjectMilestone>): Promise<ProjectMilestone | undefined> {
+    const milestone = this.projectMilestones.get(id);
+    if (!milestone) return undefined;
+
+    const updatedMilestone: ProjectMilestone = {
+      ...milestone,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    this.projectMilestones.set(id, updatedMilestone);
+    return updatedMilestone;
+  }
+
+  async deleteProjectMilestone(id: string): Promise<boolean> {
+    return this.projectMilestones.delete(id);
+  }
+
+  // Project task methods
+  async createProjectTask(insertTask: InsertProjectTask): Promise<ProjectTask> {
+    const id = randomUUID();
+    const task: ProjectTask = {
+      ...insertTask,
+      id,
+      status: insertTask.status || "todo",
+      priority: insertTask.priority || "medium",
+      description: insertTask.description || null,
+      milestoneId: insertTask.milestoneId || null,
+      estimatedHours: insertTask.estimatedHours || null,
+      actualHours: insertTask.actualHours || null,
+      dueDate: insertTask.dueDate || null,
+      completedAt: insertTask.completedAt || null,
+      order: insertTask.order || 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.projectTasks.set(id, task);
+    return task;
+  }
+
+  async getProjectTask(id: string): Promise<ProjectTask | undefined> {
+    return this.projectTasks.get(id);
+  }
+
+  async getProjectTasks(projectId: string): Promise<ProjectTask[]> {
+    return Array.from(this.projectTasks.values())
+      .filter(task => task.projectId === projectId)
+      .sort((a, b) => a.order - b.order);
+  }
+
+  async getTasksByMilestone(milestoneId: string): Promise<ProjectTask[]> {
+    return Array.from(this.projectTasks.values())
+      .filter(task => task.milestoneId === milestoneId)
+      .sort((a, b) => a.order - b.order);
+  }
+
+  async updateProjectTask(id: string, updateData: Partial<InsertProjectTask>): Promise<ProjectTask | undefined> {
+    const task = this.projectTasks.get(id);
+    if (!task) return undefined;
+
+    const updatedTask: ProjectTask = {
+      ...task,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    this.projectTasks.set(id, updatedTask);
+    return updatedTask;
+  }
+
+  async deleteProjectTask(id: string): Promise<boolean> {
+    return this.projectTasks.delete(id);
+  }
+
+  // Project comment methods
+  async createProjectComment(insertComment: InsertProjectComment): Promise<ProjectComment> {
+    const id = randomUUID();
+    const comment: ProjectComment = {
+      ...insertComment,
+      id,
+      taskId: insertComment.taskId || null,
+      milestoneId: insertComment.milestoneId || null,
+      isInternal: insertComment.isInternal || false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.projectComments.set(id, comment);
+    return comment;
+  }
+
+  async getProjectComments(projectId: string, includeInternal: boolean = true): Promise<ProjectComment[]> {
+    return Array.from(this.projectComments.values())
+      .filter(comment => 
+        comment.projectId === projectId && 
+        (includeInternal || !comment.isInternal)
+      )
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+  }
+
+  async getTaskComments(taskId: string, includeInternal: boolean = true): Promise<ProjectComment[]> {
+    return Array.from(this.projectComments.values())
+      .filter(comment => 
+        comment.taskId === taskId && 
+        (includeInternal || !comment.isInternal)
+      )
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+  }
+
+  async getMilestoneComments(milestoneId: string, includeInternal: boolean = true): Promise<ProjectComment[]> {
+    return Array.from(this.projectComments.values())
+      .filter(comment => 
+        comment.milestoneId === milestoneId && 
+        (includeInternal || !comment.isInternal)
+      )
+      .sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
+  }
+
+  async updateProjectComment(id: string, updateData: Partial<InsertProjectComment>): Promise<ProjectComment | undefined> {
+    const comment = this.projectComments.get(id);
+    if (!comment) return undefined;
+
+    const updatedComment: ProjectComment = {
+      ...comment,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    this.projectComments.set(id, updatedComment);
+    return updatedComment;
+  }
+
+  async deleteProjectComment(id: string): Promise<boolean> {
+    return this.projectComments.delete(id);
   }
 }
 

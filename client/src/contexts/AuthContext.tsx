@@ -71,7 +71,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       password,
     });
 
-    const { token: newToken, client: newClient } = response as any;
+    const data = await response.json();
+    const { token: newToken, client: newClient } = data;
     setToken(newToken);
     setClient(newClient);
     localStorage.setItem("tutsin-client-token", newToken);
@@ -94,7 +95,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       phone,
     });
 
-    const { token: newToken, client: newClient } = response as any;
+    const data = await response.json();
+    const { token: newToken, client: newClient } = data;
     setToken(newToken);
     setClient(newClient);
     localStorage.setItem("tutsin-client-token", newToken);
