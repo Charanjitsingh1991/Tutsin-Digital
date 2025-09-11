@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Moon, Sun, Menu, X } from "lucide-react";
+import { Moon, Sun, Menu, X, User } from "lucide-react";
 import { useTheme } from "@/components/ui/theme-provider";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 
 export function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
+  const { client, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleTheme = () => {
@@ -69,12 +71,39 @@ export function Navigation() {
                 <Sun className="h-5 w-5" />
               )}
             </Button>
-            <Button
-              className="gradient-bg text-white hover:opacity-90"
-              data-testid="button-get-started"
-            >
-              Get Started
-            </Button>
+            
+            {client ? (
+              <div className="flex items-center space-x-2">
+                <Link href="/client-portal" data-testid="link-client-portal">
+                  <Button variant="ghost" className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span>{client.firstName}</span>
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={logout}
+                  data-testid="button-logout"
+                >
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link href="/client-login" data-testid="link-client-login">
+                  <Button variant="outline">
+                    Client Login
+                  </Button>
+                </Link>
+                <Button
+                  className="gradient-bg text-white hover:opacity-90"
+                  data-testid="button-get-started"
+                >
+                  Get Started
+                </Button>
+              </div>
+            )}
             
             {/* Mobile menu button */}
             <Button
