@@ -1,10 +1,22 @@
-import { type User, type InsertUser, type BlogPost, type InsertBlogPost, type ContactSubmission, type InsertContactSubmission } from "@shared/schema";
+import { type User, type InsertUser, type Client, type InsertClient, type ClientSession, type InsertClientSession, type BlogPost, type InsertBlogPost, type ContactSubmission, type InsertContactSubmission } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Client authentication methods
+  getClient(id: string): Promise<Client | undefined>;
+  getClientByEmail(email: string): Promise<Client | undefined>;
+  createClient(client: InsertClient): Promise<Client>;
+  updateClient(id: string, client: Partial<InsertClient>): Promise<Client | undefined>;
+  
+  // Client session methods
+  createClientSession(session: InsertClientSession): Promise<ClientSession>;
+  getClientSession(token: string): Promise<ClientSession | undefined>;
+  deleteClientSession(token: string): Promise<boolean>;
+  cleanExpiredSessions(): Promise<void>;
   
   getBlogPosts(): Promise<BlogPost[]>;
   getPublishedBlogPosts(): Promise<BlogPost[]>;
@@ -19,16 +31,23 @@ export interface IStorage {
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
+  private clients: Map<string, Client>;
+  private clientSessions: Map<string, ClientSession>;
   private blogPosts: Map<string, BlogPost>;
   private contactSubmissions: Map<string, ContactSubmission>;
 
   constructor() {
     this.users = new Map();
+    this.clients = new Map();
+    this.clientSessions = new Map();
     this.blogPosts = new Map();
     this.contactSubmissions = new Map();
     
     // Seed with sample blog posts
     this.seedBlogPosts();
+    
+    // Clean expired sessions every hour
+    setInterval(() => this.cleanExpiredSessions(), 60 * 60 * 1000);
   }
 
   private seedBlogPosts() {
@@ -90,6 +109,83 @@ export class MemStorage implements IStorage {
     return user;
   }
 
+  // Client authentication methods
+  async getClient(id: string): Promise<Client | undefined> {
+    return this.clients.get(id);
+  }
+
+  async getClientByEmail(email: string): Promise<Client | undefined> {
+    return Array.from(this.clients.values()).find(
+      (client) => client.email === email,
+    );
+  }
+
+  async createClient(insertClient: InsertClient): Promise<Client> {
+    const id = randomUUID();
+    const client: Client = {
+      ...insertClient,
+      id,
+      company: insertClient.company || null,
+      phone: insertClient.phone || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.clients.set(id, client);
+    return client;
+  }
+
+  async updateClient(id: string, updateData: Partial<InsertClient>): Promise<Client | undefined> {
+    const client = this.clients.get(id);
+    if (!client) return undefined;
+
+    const updatedClient: Client = {
+      ...client,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    this.clients.set(id, updatedClient);
+    return updatedClient;
+  }
+
+  // Client session methods
+  async createClientSession(insertSession: InsertClientSession): Promise<ClientSession> {
+    const id = randomUUID();
+    const session: ClientSession = {
+      ...insertSession,
+      id,
+      createdAt: new Date(),
+    };
+    this.clientSessions.set(insertSession.token, session);
+    return session;
+  }
+
+  async getClientSession(token: string): Promise<ClientSession | undefined> {
+    const session = this.clientSessions.get(token);
+    if (!session) return undefined;
+    
+    // Check if session is expired
+    if (new Date() > new Date(session.expiresAt)) {
+      this.clientSessions.delete(token);
+      return undefined;
+    }
+    
+    return session;
+  }
+
+  async deleteClientSession(token: string): Promise<boolean> {
+    return this.clientSessions.delete(token);
+  }
+
+  async cleanExpiredSessions(): Promise<void> {
+    const now = new Date();
+    const entries = Array.from(this.clientSessions.entries());
+    for (const [token, session] of entries) {
+      if (now > new Date(session.expiresAt)) {
+        this.clientSessions.delete(token);
+      }
+    }
+  }
+
   async getBlogPosts(): Promise<BlogPost[]> {
     return Array.from(this.blogPosts.values()).sort((a, b) => 
       new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
@@ -111,6 +207,8 @@ export class MemStorage implements IStorage {
     const post: BlogPost = {
       ...insertPost,
       id,
+      imageUrl: insertPost.imageUrl || null,
+      published: insertPost.published || false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };

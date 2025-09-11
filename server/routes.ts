@@ -1,10 +1,157 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBlogPostSchema, insertContactSubmissionSchema } from "@shared/schema";
+import { insertBlogPostSchema, insertContactSubmissionSchema, insertClientSchema, loginClientSchema } from "@shared/schema";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+import { randomUUID } from "crypto";
+
+// Helper function to generate session tokens
+function generateSessionToken(): string {
+  return randomUUID() + '-' + Date.now().toString(36);
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Client Authentication API
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const clientData = insertClientSchema.parse(req.body);
+      
+      // Check if client already exists
+      const existingClient = await storage.getClientByEmail(clientData.email);
+      if (existingClient) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+      
+      // Hash password
+      const hashedPassword = await bcrypt.hash(clientData.password, 10);
+      
+      // Create client
+      const client = await storage.createClient({
+        ...clientData,
+        password: hashedPassword,
+      });
+      
+      // Create session
+      const token = generateSessionToken();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      await storage.createClientSession({
+        clientId: client.id,
+        token,
+        expiresAt,
+      });
+      
+      res.status(201).json({ 
+        message: "Registration successful", 
+        token,
+        client: { 
+          id: client.id, 
+          firstName: client.firstName, 
+          lastName: client.lastName, 
+          email: client.email,
+          company: client.company,
+          phone: client.phone
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid registration data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = loginClientSchema.parse(req.body);
+      
+      // Find client
+      const client = await storage.getClientByEmail(email);
+      if (!client) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, client.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Create session
+      const token = generateSessionToken();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      
+      await storage.createClientSession({
+        clientId: client.id,
+        token,
+        expiresAt,
+      });
+      
+      res.json({ 
+        message: "Login successful", 
+        token,
+        client: { 
+          id: client.id, 
+          firstName: client.firstName, 
+          lastName: client.lastName, 
+          email: client.email,
+          company: client.company,
+          phone: client.phone
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid login data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (token) {
+        await storage.deleteClientSession(token);
+      }
+      res.json({ message: "Logout successful" });
+    } catch (error) {
+      res.status(500).json({ message: "Logout failed" });
+    }
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '');
+      if (!token) {
+        return res.status(401).json({ message: "No token provided" });
+      }
+      
+      const session = await storage.getClientSession(token);
+      if (!session) {
+        return res.status(401).json({ message: "Invalid or expired token" });
+      }
+      
+      const client = await storage.getClient(session.clientId);
+      if (!client) {
+        return res.status(401).json({ message: "Client not found" });
+      }
+      
+      res.json({ 
+        client: { 
+          id: client.id, 
+          firstName: client.firstName, 
+          lastName: client.lastName, 
+          email: client.email,
+          company: client.company,
+          phone: client.phone
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to get user info" });
+    }
+  });
+
   // Blog Posts API
   app.get("/api/blog/posts", async (req, res) => {
     try {

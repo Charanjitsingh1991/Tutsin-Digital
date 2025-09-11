@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ui/theme-provider";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
 import NotFound from "@/pages/not-found";
@@ -14,6 +15,8 @@ import Hosting from "@/pages/Hosting";
 import Blog from "@/pages/Blog";
 import Terms from "@/pages/Terms";
 import Admin from "@/pages/Admin";
+import ClientAuth from "@/pages/ClientAuth";
+import ClientPortal from "@/pages/ClientPortal";
 
 function Router() {
   return (
@@ -28,6 +31,8 @@ function Router() {
         <Route path="/blog/:id" component={Blog} />
         <Route path="/terms" component={Terms} />
         <Route path="/admin" component={Admin} />
+        <Route path="/client-login" component={ClientAuth} />
+        <Route path="/client-portal" component={ClientPortal} />
         <Route component={NotFound} />
       </Switch>
       <Footer />
@@ -38,12 +43,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="dark" storageKey="tutsin-ui-theme">
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider defaultTheme="dark" storageKey="tutsin-ui-theme">
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
