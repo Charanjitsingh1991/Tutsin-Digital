@@ -17,6 +17,7 @@ import Terms from "@/pages/Terms";
 import Admin from "@/pages/Admin";
 import ClientAuth from "@/pages/ClientAuth";
 import ClientPortal from "@/pages/ClientPortal";
+import { Analytics } from "@/pages/Analytics";
 
 function Router() {
   return (
@@ -31,6 +32,7 @@ function Router() {
         <Route path="/blog/:id" component={Blog} />
         <Route path="/terms" component={Terms} />
         <Route path="/admin" component={Admin} />
+        <Route path="/analytics" component={Analytics} />
         <Route path="/client-login" component={ClientAuth} />
         <Route path="/client-portal" component={ClientPortal} />
         <Route component={NotFound} />

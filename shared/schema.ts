@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -51,6 +51,28 @@ export const contactSubmissions = pgTable("contact_submissions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const pageViews = pgTable("page_views", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  path: text("path").notNull(),
+  userAgent: text("user_agent"),
+  referrer: text("referrer"),
+  ip: text("ip"),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+export const websiteMetrics = pgTable("website_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  date: varchar("date").notNull(), // YYYY-MM-DD format
+  totalViews: integer("total_views").notNull().default(0),
+  uniqueVisitors: integer("unique_visitors").notNull().default(0),
+  bounceRate: integer("bounce_rate").notNull().default(0), // percentage
+  avgSessionDuration: integer("avg_session_duration").notNull().default(0), // seconds
+  topPages: text("top_pages").array(), // JSON array of page paths
+  topReferrers: text("top_referrers").array(), // JSON array of referrer URLs
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -83,6 +105,17 @@ export const insertClientSessionSchema = createInsertSchema(clientSessions).omit
   createdAt: true,
 });
 
+export const insertPageViewSchema = createInsertSchema(pageViews).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertWebsiteMetricsSchema = createInsertSchema(websiteMetrics).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Client = typeof clients.$inferSelect;
@@ -94,3 +127,7 @@ export type BlogPost = typeof blogPosts.$inferSelect;
 export type InsertBlogPost = z.infer<typeof insertBlogPostSchema>;
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 export type InsertContactSubmission = z.infer<typeof insertContactSubmissionSchema>;
+export type PageView = typeof pageViews.$inferSelect;
+export type InsertPageView = z.infer<typeof insertPageViewSchema>;
+export type WebsiteMetrics = typeof websiteMetrics.$inferSelect;
+export type InsertWebsiteMetrics = z.infer<typeof insertWebsiteMetricsSchema>;
