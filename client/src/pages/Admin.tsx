@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { BlogPost, ContactSubmission, InsertBlogPost } from "@shared/schema";
 import { Switch } from "@/components/ui/switch";
+import { BarChart3 } from "lucide-react";
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -216,13 +218,21 @@ export default function Admin() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-gradient" data-testid="text-admin-title">Admin Panel</h1>
-          <Button 
-            onClick={handleLogout} 
-            variant="outline"
-            data-testid="button-admin-logout"
-          >
-            Logout
-          </Button>
+          <div className="flex items-center space-x-3">
+            <Link href="/analytics" data-testid="link-analytics">
+              <Button variant="outline" className="flex items-center space-x-2">
+                <BarChart3 className="h-4 w-4" />
+                <span>Analytics</span>
+              </Button>
+            </Link>
+            <Button 
+              onClick={handleLogout} 
+              variant="outline"
+              data-testid="button-admin-logout"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="posts" className="space-y-8">

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertBlogPostSchema, insertContactSubmissionSchema, insertClientSchema, loginClientSchema } from "@shared/schema";
+import { insertBlogPostSchema, insertContactSubmissionSchema, insertClientSchema, loginClientSchema, insertPageViewSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
@@ -245,6 +245,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(submissions);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch contact submissions" });
+    }
+  });
+
+  // Analytics API
+  app.post("/api/analytics/pageview", async (req, res) => {
+    try {
+      const pageViewData = insertPageViewSchema.parse(req.body);
+      const pageView = await storage.createPageView(pageViewData);
+      res.status(201).json({ message: "Page view recorded", pageView });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid page view data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to record page view" });
+    }
+  });
+
+  app.get("/api/analytics/metrics", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "startDate and endDate query parameters are required" });
+      }
+      
+      const metrics = await storage.getWebsiteMetricsRange(
+        startDate as string, 
+        endDate as string
+      );
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch analytics metrics" });
+    }
+  });
+
+  app.get("/api/analytics/metrics/:date", async (req, res) => {
+    try {
+      const { date } = req.params;
+      const metrics = await storage.getWebsiteMetrics(date);
+      
+      if (!metrics) {
+        return res.status(404).json({ message: "Metrics not found for this date" });
+      }
+      
+      res.json(metrics);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch metrics for date" });
+    }
+  });
+
+  app.get("/api/analytics/overview", async (req, res) => {
+    try {
+      // Get metrics for the last 30 days
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      
+      const metrics = await storage.getWebsiteMetricsRange(startDate, endDate);
+      
+      // Calculate summary statistics
+      const totalViews = metrics.reduce((sum, m) => sum + m.totalViews, 0);
+      const totalUniqueVisitors = metrics.reduce((sum, m) => sum + m.uniqueVisitors, 0);
+      const avgBounceRate = metrics.length > 0 ? 
+        Math.round(metrics.reduce((sum, m) => sum + m.bounceRate, 0) / metrics.length) : 0;
+      const avgSessionDuration = metrics.length > 0 ? 
+        Math.round(metrics.reduce((sum, m) => sum + m.avgSessionDuration, 0) / metrics.length) : 0;
+      
+      // Get top pages and referrers from the most recent data
+      const recentMetrics = metrics.slice(-7); // Last 7 days
+      const topPagesMap = new Map<string, number>();
+      const topReferrersMap = new Map<string, number>();
+      
+      recentMetrics.forEach(m => {
+        m.topPages?.forEach(page => {
+          topPagesMap.set(page, (topPagesMap.get(page) || 0) + 1);
+        });
+        m.topReferrers?.forEach(referrer => {
+          topReferrersMap.set(referrer, (topReferrersMap.get(referrer) || 0) + 1);
+        });
+      });
+      
+      const topPages = Array.from(topPagesMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([page, count]) => ({ page, views: count }));
+        
+      const topReferrers = Array.from(topReferrersMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([referrer, count]) => ({ referrer, visits: count }));
+      
+      res.json({
+        summary: {
+          totalViews,
+          totalUniqueVisitors,
+          avgBounceRate,
+          avgSessionDuration,
+        },
+        topPages,
+        topReferrers,
+        dailyMetrics: metrics.slice(-7), // Last 7 days for charts
+        period: { startDate, endDate }
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch analytics overview" });
     }
   });
 
