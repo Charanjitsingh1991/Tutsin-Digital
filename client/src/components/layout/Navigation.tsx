@@ -1,19 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Moon, Sun, Menu, X, User } from "lucide-react";
+import { Moon, Sun, Menu, X, User, Clock } from "lucide-react";
 import { useTheme } from "@/components/ui/theme-provider";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
+import { useTimeBasedTheme } from "@/hooks/useTimeBasedTheme";
 
 export function Navigation() {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { client, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAutoTheme, setIsAutoTheme] = useState(true);
+  const { isDay, currentTime } = useTimeBasedTheme(isAutoTheme);
 
+  // Disable auto theme when user manually toggles
   const toggleTheme = () => {
+    setIsAutoTheme(false);
     setTheme(theme === "light" ? "dark" : "light");
   };
+
+  const toggleAutoTheme = () => {
+    setIsAutoTheme(!isAutoTheme);
+  };
+
+  // Re-enable auto theme when toggled back on
+  useEffect(() => {
+    if (isAutoTheme) {
+      // The useTimeBasedTheme hook will handle the theme switching
+    }
+  }, [isAutoTheme]);
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -34,9 +50,11 @@ export function Navigation() {
         <div className="flex justify-between items-center h-16">
           <Link href="/" data-testid="link-home">
             <div className="flex items-center space-x-2 cursor-pointer">
-              <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">T</span>
-              </div>
+              <img 
+                src="/logo.png" 
+                alt="Tutsin Digital Logo" 
+                className="w-10 h-10 rounded-full object-cover"
+              />
               <span className="text-xl font-bold text-gradient">Tutsin</span>
             </div>
           </Link>
@@ -61,9 +79,22 @@ export function Navigation() {
             <Button
               variant="ghost"
               size="sm"
+              onClick={toggleAutoTheme}
+              data-testid="button-auto-theme-toggle"
+              className={`p-2 ${isAutoTheme ? 'text-yellow-500' : 'text-muted-foreground'}`}
+              title={isAutoTheme ? 'Auto theme enabled (based on time)' : 'Auto theme disabled'}
+            >
+              <Clock className="h-5 w-5" />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={toggleTheme}
               data-testid="button-theme-toggle"
               className="p-2"
+              disabled={isAutoTheme}
+              title={isAutoTheme ? 'Manual theme control disabled' : 'Toggle theme manually'}
             >
               {theme === "light" ? (
                 <Moon className="h-5 w-5" />
@@ -97,7 +128,7 @@ export function Navigation() {
                   </Button>
                 </Link>
                 <Button
-                  className="gradient-bg text-white hover:opacity-90"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90"
                   data-testid="button-get-started"
                 >
                   Get Started
