@@ -1,25 +1,27 @@
+import { Rocket, Shield, Brain, Headphones } from "lucide-react";
+
 export function WhyChooseUs() {
   const features = [
     {
-      icon: "fas fa-rocket",
+      icon: Rocket,
       title: "Fast Delivery",
       description: "Quick turnaround times without compromising quality. Most projects delivered within 2-4 weeks.",
       delay: "0s"
     },
     {
-      icon: "fas fa-shield-alt",
+      icon: Shield,
       title: "Secure & Reliable",
       description: "Enterprise-grade security with SSL certificates, daily backups, and 99.9% uptime guarantee.",
       delay: "0.5s"
     },
     {
-      icon: "fas fa-brain",
+      icon: Brain,
       title: "AI-Powered",
       description: "Leverage artificial intelligence for SEO optimization, content creation, and data-driven insights.",
       delay: "1s"
     },
     {
-      icon: "fas fa-headset",
+      icon: Headphones,
       title: "24/7 Support",
       description: "Round-the-clock customer support with live chat, mobile apps, and dedicated account managers.",
       delay: "1.5s"
@@ -39,19 +41,22 @@ export function WhyChooseUs() {
         </div>
         
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
-            <div key={index} className="text-center" data-testid={`feature-${index}`}>
-              <div 
-                className="w-20 h-20 gradient-bg rounded-full flex items-center justify-center mx-auto mb-6 animate-float"
-                style={{ animationDelay: feature.delay }}
-                data-testid={`icon-feature-${index}`}
-              >
-                <i className={`${feature.icon} text-3xl text-white`}></i>
+          {features.map((feature, index) => {
+            const IconComponent = feature.icon;
+            return (
+              <div key={index} className="text-center" data-testid={`feature-${index}`}>
+                <div 
+                  className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-6 animate-float"
+                  style={{ animationDelay: feature.delay }}
+                  data-testid={`icon-feature-${index}`}
+                >
+                  <IconComponent className="text-3xl text-primary-foreground" size={36} />
+                </div>
+                <h3 className="text-xl font-bold mb-4" data-testid={`title-feature-${index}`}>{feature.title}</h3>
+                <p className="text-muted-foreground" data-testid={`description-feature-${index}`}>{feature.description}</p>
               </div>
-              <h3 className="text-xl font-bold mb-4" data-testid={`title-feature-${index}`}>{feature.title}</h3>
-              <p className="text-muted-foreground" data-testid={`description-feature-${index}`}>{feature.description}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>

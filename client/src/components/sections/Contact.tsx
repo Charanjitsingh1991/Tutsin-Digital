@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { InsertContactSubmission } from "@shared/schema";
+import { Phone, Mail, MapPin, Facebook, Twitter, Linkedin, Instagram } from "lucide-react";
 
 export function Contact() {
   const [formData, setFormData] = useState({
@@ -83,8 +84,8 @@ export function Contact() {
             
             <div className="space-y-6">
               <div className="flex items-center space-x-4" data-testid="contact-phone">
-                <div className="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                  <i className="fas fa-phone text-white"></i>
+                <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                  <Phone className="text-primary-foreground" size={20} />
                 </div>
                 <div>
                   <div className="font-semibold text-foreground">Phone</div>
@@ -93,8 +94,8 @@ export function Contact() {
               </div>
               
               <div className="flex items-center space-x-4" data-testid="contact-email">
-                <div className="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                  <i className="fas fa-envelope text-white"></i>
+                <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                  <Mail className="text-primary-foreground" size={20} />
                 </div>
                 <div>
                   <div className="font-semibold text-foreground">Email</div>
@@ -103,8 +104,8 @@ export function Contact() {
               </div>
               
               <div className="flex items-center space-x-4" data-testid="contact-office">
-                <div className="w-12 h-12 gradient-bg rounded-lg flex items-center justify-center">
-                  <i className="fas fa-map-marker-alt text-white"></i>
+                <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
+                  <MapPin className="text-primary-foreground" size={20} />
                 </div>
                 <div>
                   <div className="font-semibold text-foreground">Office</div>
@@ -116,17 +117,17 @@ export function Contact() {
             <div className="mt-8">
               <h4 className="font-semibold mb-4 text-foreground">Follow Us</h4>
               <div className="flex space-x-4">
-                <a href="#" className="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center text-white hover:opacity-80 transition-opacity" data-testid="link-social-facebook">
-                  <i className="fab fa-facebook-f"></i>
+                <a href="#" className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground hover:opacity-80 transition-opacity" data-testid="link-social-facebook">
+                  <Facebook size={18} />
                 </a>
-                <a href="#" className="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center text-white hover:opacity-80 transition-opacity" data-testid="link-social-twitter">
-                  <i className="fab fa-twitter"></i>
+                <a href="#" className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground hover:opacity-80 transition-opacity" data-testid="link-social-twitter">
+                  <Twitter size={18} />
                 </a>
-                <a href="#" className="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center text-white hover:opacity-80 transition-opacity" data-testid="link-social-linkedin">
-                  <i className="fab fa-linkedin-in"></i>
+                <a href="#" className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground hover:opacity-80 transition-opacity" data-testid="link-social-linkedin">
+                  <Linkedin size={18} />
                 </a>
-                <a href="#" className="w-10 h-10 gradient-bg rounded-lg flex items-center justify-center text-white hover:opacity-80 transition-opacity" data-testid="link-social-instagram">
-                  <i className="fab fa-instagram"></i>
+                <a href="#" className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-primary-foreground hover:opacity-80 transition-opacity" data-testid="link-social-instagram">
+                  <Instagram size={18} />
                 </a>
               </div>
             </div>
@@ -206,7 +207,7 @@ export function Contact() {
               
               <Button 
                 type="submit" 
-                className="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:opacity-90 transition-all neon-glow"
+                className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all"
                 disabled={contactMutation.isPending}
                 data-testid="button-send-message"
               >

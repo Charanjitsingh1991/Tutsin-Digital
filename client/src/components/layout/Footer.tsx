@@ -1,15 +1,16 @@
 import { Link } from "wouter";
+import { Facebook, Twitter, Linkedin, Instagram, Phone, Mail, MapPin } from "lucide-react";
 
 export function Footer() {
+  const currentYear = new Date().getFullYear();
+  
   return (
     <footer className="bg-secondary py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-6">
-              <div className="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">T</span>
-              </div>
+              <img src="/tutsin-logo.png" alt="Tutsin Logo" className="w-8 h-8 rounded-lg" />
               <span className="text-xl font-bold text-gradient">Tutsin</span>
             </div>
             <p className="text-muted-foreground mb-6">
@@ -17,16 +18,16 @@ export function Footer() {
             </p>
             <div className="flex space-x-4">
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-facebook">
-                <i className="fab fa-facebook-f"></i>
+                <Facebook size={18} />
               </a>
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-twitter">
-                <i className="fab fa-twitter"></i>
+                <Twitter size={18} />
               </a>
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-linkedin">
-                <i className="fab fa-linkedin-in"></i>
+                <Linkedin size={18} />
               </a>
               <a href="#" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-instagram">
-                <i className="fab fa-instagram"></i>
+                <Instagram size={18} />
               </a>
             </div>
           </div>
@@ -56,16 +57,16 @@ export function Footer() {
           <div>
             <h4 className="font-semibold text-foreground mb-6">Contact Info</h4>
             <ul className="space-y-3">
-              <li className="text-muted-foreground" data-testid="text-phone">
-                <i className="fas fa-phone mr-2"></i>
+              <li className="text-muted-foreground flex items-center" data-testid="text-phone">
+                <Phone size={16} className="mr-2" />
                 +91 9876543210
               </li>
-              <li className="text-muted-foreground" data-testid="text-email">
-                <i className="fas fa-envelope mr-2"></i>
+              <li className="text-muted-foreground flex items-center" data-testid="text-email">
+                <Mail size={16} className="mr-2" />
                 contact@tutsin.in
               </li>
-              <li className="text-muted-foreground" data-testid="text-location">
-                <i className="fas fa-map-marker-alt mr-2"></i>
+              <li className="text-muted-foreground flex items-center" data-testid="text-location">
+                <MapPin size={16} className="mr-2" />
                 Mumbai, Maharashtra, India
               </li>
             </ul>
@@ -74,7 +75,7 @@ export function Footer() {
         
         <div className="border-t border-border mt-12 pt-8 text-center">
           <p className="text-muted-foreground" data-testid="text-copyright">
-            © 2024 Tutsin. All rights reserved. Intellectual Property owned by Tutsin Digital Marketing Agency.
+            © 2018-{currentYear} Tutsin. All rights reserved. Intellectual Property owned by Tutsin Digital Marketing Agency.
           </p>
         </div>
       </div>
