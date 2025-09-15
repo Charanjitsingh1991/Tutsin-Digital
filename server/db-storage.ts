@@ -87,6 +87,128 @@ export class PostgreSQLStorage implements IStorage {
 
       await db.insert(websiteMetrics).values(analyticsData);
 
+      // Seed sample projects
+      const sampleProject = {
+        id: "sample-project-website-redesign",
+        title: "Website Redesign Project",
+        description: "Complete redesign of company website with modern UI/UX and mobile optimization",
+        clientId: "sample-client-jane-smith-uuid",
+        status: "in_progress",
+        priority: "high",
+        budget: 2999900, // $29,999 in cents
+        startDate: new Date("2024-09-01"),
+        endDate: new Date("2024-12-01"),
+      };
+
+      await db.insert(projects).values(sampleProject);
+
+      // Seed sample milestones
+      const sampleMilestones = [
+        {
+          id: "milestone-1-discovery",
+          projectId: "sample-project-website-redesign",
+          title: "Discovery & Planning",
+          description: "Research, competitor analysis, and project planning phase",
+          status: "completed",
+          dueDate: new Date("2024-09-15"),
+          completedAt: new Date("2024-09-14"),
+          order: 1,
+        },
+        {
+          id: "milestone-2-design",
+          projectId: "sample-project-website-redesign",
+          title: "Design & Wireframing",
+          description: "Create wireframes, mockups, and design system",
+          status: "in_progress",
+          dueDate: new Date("2024-10-15"),
+          order: 2,
+        },
+        {
+          id: "milestone-3-development",
+          projectId: "sample-project-website-redesign",
+          title: "Development & Implementation",
+          description: "Frontend and backend development of the new website",
+          status: "pending",
+          dueDate: new Date("2024-11-15"),
+          order: 3,
+        },
+        {
+          id: "milestone-4-testing",
+          projectId: "sample-project-website-redesign",
+          title: "Testing & Launch",
+          description: "Quality assurance, testing, and website launch",
+          status: "pending",
+          dueDate: new Date("2024-12-01"),
+          order: 4,
+        },
+      ];
+
+      await db.insert(projectMilestones).values(sampleMilestones);
+
+      // Seed sample tasks
+      const sampleTasks = [
+        {
+          id: "task-1-research",
+          projectId: "sample-project-website-redesign",
+          milestoneId: "milestone-1-discovery",
+          title: "Competitor Analysis",
+          description: "Analyze top 5 competitors' websites and identify best practices",
+          status: "completed",
+          priority: "high",
+          estimatedHours: 8,
+          actualHours: 6,
+          completedAt: new Date("2024-09-10"),
+          order: 1,
+        },
+        {
+          id: "task-2-wireframes",
+          projectId: "sample-project-website-redesign",
+          milestoneId: "milestone-2-design",
+          title: "Create Homepage Wireframes",
+          description: "Design wireframes for the new homepage layout",
+          status: "in_progress",
+          priority: "high",
+          estimatedHours: 12,
+          dueDate: new Date("2024-10-05"),
+          order: 2,
+        },
+        {
+          id: "task-3-mockups",
+          projectId: "sample-project-website-redesign",
+          milestoneId: "milestone-2-design",
+          title: "High-Fidelity Mockups",
+          description: "Create detailed mockups for all main pages",
+          status: "todo",
+          priority: "medium",
+          estimatedHours: 20,
+          dueDate: new Date("2024-10-12"),
+          order: 3,
+        },
+      ];
+
+      await db.insert(projectTasks).values(sampleTasks);
+
+      // Seed sample comments
+      const sampleComments = [
+        {
+          id: "comment-1-feedback",
+          projectId: "sample-project-website-redesign",
+          authorId: "sample-client-jane-smith-uuid",
+          content: "Great progress on the discovery phase! I'm excited to see the wireframes.",
+          isInternal: false,
+        },
+        {
+          id: "comment-2-update",
+          projectId: "sample-project-website-redesign",
+          taskId: "task-2-wireframes",
+          authorId: "sample-client-jane-smith-uuid",
+          content: "Could we add a testimonials section to the homepage wireframe?",
+          isInternal: false,
+        },
+      ];
+
+      await db.insert(projectComments).values(sampleComments);
+
       console.log("Database seeded successfully");
     } catch (error) {
       console.error("Error seeding database:", error);
@@ -261,6 +383,10 @@ export class PostgreSQLStorage implements IStorage {
     return await db.select().from(projects)
       .where(eq(projects.clientId, clientId))
       .orderBy(desc(projects.createdAt));
+  }
+
+  async getAllProjects(): Promise<Project[]> {
+    return await db.select().from(projects).orderBy(desc(projects.createdAt));
   }
 
   async updateProject(id: string, updateData: Partial<InsertProject>): Promise<Project | undefined> {

@@ -27,6 +27,7 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [client, setClient] = useState<Client | null>(null);
+  console.log("AuthContext - client state:", client);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 

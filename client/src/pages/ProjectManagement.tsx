@@ -21,6 +21,7 @@ interface ProjectWithDetails extends Project {
 
 export function ProjectManagement() {
   const { client } = useAuth();
+  console.log("ProjectManagement - client:", client);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
@@ -29,7 +30,12 @@ export function ProjectManagement() {
   // Queries
   const { data: projects, isLoading: isLoadingProjects } = useQuery({
     queryKey: ["/api/projects", client?.id],
-    queryFn: () => apiRequest("GET", `/api/projects?clientId=${client?.id}`) as Promise<Project[]>,
+    queryFn: () => {
+      if (!client?.id) {
+        return Promise.reject(new Error("Client ID is not available"));
+      }
+      return apiRequest("GET", `/api/projects?clientId=${client.id}`) as Promise<Project[]>;
+    },
     enabled: !!client?.id,
   });
 

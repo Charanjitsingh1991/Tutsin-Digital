@@ -361,11 +361,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const projects = await storage.getProjectsByClient(clientId as string);
         res.json(projects);
       } else {
-        // Admin endpoint - get all projects
-        const projects = Array.from(storage.projects.values());
+        // This path should ideally be restricted to admin users or return an error if no clientId is provided for client users.
+        // For now, we'll return all projects, but this needs proper authentication/authorization for admin.
+        const projects = await storage.getAllProjects();
         res.json(projects);
       }
     } catch (error) {
+      console.error('Error fetching projects:', error);
       res.status(500).json({ message: "Failed to fetch projects" });
     }
   });
