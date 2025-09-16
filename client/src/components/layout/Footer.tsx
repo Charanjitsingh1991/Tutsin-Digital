@@ -10,8 +10,7 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center space-x-2 mb-6">
-              <img src="/tutsin-logo.png" alt="Tutsin Logo" className="w-8 h-8 rounded-lg" />
-              <span className="text-xl font-bold text-gradient">Tutsin</span>
+              <img src="/logo.png" alt="Tutsin Digital Logo" className="w-10 h-10 rounded-full object-cover" />
             </div>
             <p className="text-muted-foreground mb-6">
               Your trusted partner for digital transformation. We create stunning websites and drive digital growth for businesses worldwide.

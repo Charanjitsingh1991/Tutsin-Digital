@@ -6,7 +6,7 @@
 :root {
   --background: hsl(220 30% 8%); /* Dark Blue for low-light aesthetic */
   --foreground: hsl(210 20% 95%); /* Light Blue-Grey for text */
-  --card: hsl(220 25% 15%); /* Slightly lighter dark blue for cards */
+  --card: hsl(0 0% 100%); /* White for cards */
   --card-foreground: hsl(210 20% 95%);
   --popover: hsl(220 25% 15%);
   --popover-foreground: hsl(210 20% 95%);
@@ -27,7 +27,7 @@
   --chart-3: hsl(28 80% 60%); /* Warm Accent Orange */
   --chart-4: hsl(120 40% 50%); /* Green */
   --chart-5: hsl(300 50% 60%); /* Purple */
-  --sidebar: hsl(220 30% 8%);
+  --sidebar: hsl(0 0% 100%); /* White for sidebar */
   --sidebar-foreground: hsl(210 20% 95%);
   --sidebar-primary: hsl(48 100% 50%);
   --sidebar-primary-foreground: hsl(220 30% 8%);

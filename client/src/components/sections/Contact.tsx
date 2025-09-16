@@ -133,7 +133,7 @@ export function Contact() {
             </div>
           </div>
           
-          <div className="glass rounded-2xl p-8">
+          <div className="rounded-2xl p-8 bg-card border-2 border-gray-200 shadow-lg">
             <form onSubmit={handleSubmit} data-testid="form-contact">
               <div className="grid md:grid-cols-2 gap-6 mb-6">
                 <div>

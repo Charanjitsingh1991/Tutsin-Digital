@@ -67,7 +67,7 @@ export function Pricing() {
           {plans.map((plan, index) => (
             <div 
               key={index} 
-              className={`glass rounded-2xl p-8 hover:scale-105 transition-all duration-300 relative ${
+              className={`rounded-2xl p-8 bg-card border-2 border-gray-200 shadow-lg hover:scale-105 transition-all duration-300 relative ${
                 plan.isPopular ? 'border-2 border-primary' : ''
               }`}
               data-testid={`card-plan-${index}`}

@@ -86,7 +86,7 @@ export function Services() {
           {services.map((service, index) => {
             const IconComponent = service.icon;
             return (
-              <div key={index} className="glass rounded-2xl p-8 hover:scale-105 transition-all duration-300 group" data-testid={`card-service-${index}`}>
+              <div key={index} className="rounded-2xl p-8 border-2 border-gray-200 bg-card shadow-lg hover:scale-105 transition-all duration-300 group" data-testid={`card-service-${index}`}>
                 <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mb-6 group-hover:neon-glow" data-testid={`icon-service-${index}`}>
                   <IconComponent className="text-2xl text-primary-foreground" size={32} />
                 </div>
