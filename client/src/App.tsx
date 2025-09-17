@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AdminAuthProvider } from "@/contexts/AdminAuthContext";
 import { Navigation } from "@/components/layout/Navigation";
 import { Footer } from "@/components/layout/Footer";
 import NotFound from "@/pages/not-found";
@@ -15,6 +16,7 @@ import Hosting from "@/pages/Hosting";
 import Blog from "@/pages/Blog";
 import Terms from "@/pages/Terms";
 import Admin from "@/pages/Admin";
+import AdminDashboard from "@/pages/AdminDashboard";
 import ClientAuth from "@/pages/ClientAuth";
 import ClientPortal from "@/pages/ClientPortal";
 import { Analytics } from "@/pages/Analytics";
@@ -33,6 +35,7 @@ function Router() {
         <Route path="/blog/:id" component={Blog} />
         <Route path="/terms" component={Terms} />
         <Route path="/admin" component={Admin} />
+        <Route path="/admin-dashboard" component={AdminDashboard} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/client-login" component={ClientAuth} />
         <Route path="/client-portal" component={ClientPortal} />
@@ -48,12 +51,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <ThemeProvider defaultTheme="dark" storageKey="tutsin-ui-theme">
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-          </TooltipProvider>
-        </ThemeProvider>
+        <AdminAuthProvider>
+          <ThemeProvider defaultTheme="dark" storageKey="tutsin-ui-theme">
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+            </TooltipProvider>
+          </ThemeProvider>
+        </AdminAuthProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

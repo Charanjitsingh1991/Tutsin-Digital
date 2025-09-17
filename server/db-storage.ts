@@ -1,15 +1,30 @@
 import { type User, type InsertUser, type Client, type InsertClient, type ClientSession, type InsertClientSession, type BlogPost, type InsertBlogPost, type ContactSubmission, type InsertContactSubmission, type PageView, type InsertPageView, type WebsiteMetrics, type InsertWebsiteMetrics, type Project, type InsertProject, type ProjectMilestone, type InsertProjectMilestone, type ProjectTask, type InsertProjectTask, type ProjectComment, type InsertProjectComment } from "@shared/schema";
 import { db } from "./db";
-import { users, clients, clientSessions, blogPosts, contactSubmissions, pageViews, websiteMetrics, projects, projectMilestones, projectTasks, projectComments } from "@shared/schema";
+import { users, clients, clientSessions, blogPosts, contactSubmissions, pageViews, websiteMetrics, projects, projectMilestones, projectTasks, projectComments, admins, adminRoles, adminSessions, notifications, fileUploads } from "@shared/schema";
 import { eq, and, gte, lte, desc, asc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import { IStorage } from "./storage";
+import { seedAdminData } from "./admin-seed";
 
 export class PostgreSQLStorage implements IStorage {
   constructor() {
     // Seed with sample data on initialization
     this.seedData();
+    // Seed admin data
+    this.seedAdminData();
+  }
+
+  private async seedAdminData() {
+    try {
+      // Check if admin data already exists
+      const existingRoles = await db.select().from(adminRoles).limit(1);
+      if (existingRoles.length > 0) return;
+
+      await seedAdminData();
+    } catch (error) {
+      console.error("Error seeding admin data:", error);
+    }
   }
 
   private async seedData() {
@@ -526,6 +541,151 @@ export class PostgreSQLStorage implements IStorage {
 
   async deleteProjectComment(id: string): Promise<boolean> {
     const result = await db.delete(projectComments).where(eq(projectComments.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Admin methods implementation
+  async createAdmin(adminData: any): Promise<any> {
+    const hashedPassword = await bcrypt.hash(adminData.password, 10);
+    const result = await db.insert(admins).values({
+      id: randomUUID(),
+      ...adminData,
+      password: hashedPassword,
+    }).returning();
+    return result[0];
+  }
+
+  async getAdminByEmail(email: string): Promise<any> {
+    const result = await db.select().from(admins).where(eq(admins.email, email));
+    return result[0];
+  }
+
+  async getAdminById(id: string): Promise<any> {
+    const result = await db.select().from(admins).where(eq(admins.id, id));
+    return result[0];
+  }
+
+  async getAllAdmins(): Promise<any[]> {
+    return await db.select().from(admins).orderBy(desc(admins.createdAt));
+  }
+
+  async updateAdmin(id: string, updateData: any): Promise<any> {
+    if (updateData.password) {
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    }
+    const result = await db.update(admins)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(admins.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAdmin(id: string): Promise<boolean> {
+    const result = await db.delete(admins).where(eq(admins.id, id));
+    return result.rowCount > 0;
+  }
+
+  async createAdminRole(roleData: any): Promise<any> {
+    const result = await db.insert(adminRoles).values({
+      id: randomUUID(),
+      ...roleData,
+    }).returning();
+    return result[0];
+  }
+
+  async getAllAdminRoles(): Promise<any[]> {
+    return await db.select().from(adminRoles).orderBy(asc(adminRoles.name));
+  }
+
+  async getAdminRoleById(id: string): Promise<any> {
+    const result = await db.select().from(adminRoles).where(eq(adminRoles.id, id));
+    return result[0];
+  }
+
+  async updateAdminRole(id: string, updateData: any): Promise<any> {
+    const result = await db.update(adminRoles)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(adminRoles.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteAdminRole(id: string): Promise<boolean> {
+    const result = await db.delete(adminRoles).where(eq(adminRoles.id, id));
+    return result.rowCount > 0;
+  }
+
+  async createAdminSession(sessionData: any): Promise<any> {
+    const result = await db.insert(adminSessions).values({
+      id: randomUUID(),
+      ...sessionData,
+    }).returning();
+    return result[0];
+  }
+
+  async getAdminSession(token: string): Promise<any> {
+    const result = await db.select().from(adminSessions).where(eq(adminSessions.token, token));
+    return result[0];
+  }
+
+  async deleteAdminSession(token: string): Promise<boolean> {
+    const result = await db.delete(adminSessions).where(eq(adminSessions.token, token));
+    return result.rowCount > 0;
+  }
+
+  async createNotification(notificationData: any): Promise<any> {
+    const result = await db.insert(notifications).values({
+      id: randomUUID(),
+      ...notificationData,
+    }).returning();
+    return result[0];
+  }
+
+  async getNotifications(userId?: string, adminId?: string): Promise<any[]> {
+    let query = db.select().from(notifications);
+    
+    if (userId) {
+      query = query.where(eq(notifications.userId, userId));
+    } else if (adminId) {
+      query = query.where(eq(notifications.adminId, adminId));
+    }
+    
+    return await query.orderBy(desc(notifications.createdAt));
+  }
+
+  async markNotificationAsRead(id: string): Promise<any> {
+    const result = await db.update(notifications)
+      .set({ isRead: true, updatedAt: new Date() })
+      .where(eq(notifications.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteNotification(id: string): Promise<boolean> {
+    const result = await db.delete(notifications).where(eq(notifications.id, id));
+    return result.rowCount > 0;
+  }
+
+  async createFileUpload(fileData: any): Promise<any> {
+    const result = await db.insert(fileUploads).values({
+      id: randomUUID(),
+      ...fileData,
+    }).returning();
+    return result[0];
+  }
+
+  async getFileUploads(userId?: string): Promise<any[]> {
+    let query = db.select().from(fileUploads);
+    
+    if (userId) {
+      query = query.where(eq(fileUploads.uploadedBy, userId));
+    }
+    
+    return await query.orderBy(desc(fileUploads.createdAt));
+  }
+
+  async deleteFileUpload(id: string): Promise<boolean> {
+    const result = await db.delete(fileUploads).where(eq(fileUploads.id, id));
     return result.rowCount > 0;
   }
 }

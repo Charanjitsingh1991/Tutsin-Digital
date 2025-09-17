@@ -5,6 +5,8 @@ import { insertBlogPostSchema, insertContactSubmissionSchema, insertClientSchema
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
+import { registerAdminRoutes } from "./admin-routes";
+import { registerEnhancedFeatures } from "./enhanced-features";
 
 // Helper function to generate session tokens
 function generateSessionToken(): string {
@@ -12,6 +14,12 @@ function generateSessionToken(): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register admin routes first
+  await registerAdminRoutes(app);
+  
+  // Register enhanced features
+  await registerEnhancedFeatures(app);
+  
   // Client Authentication API
   app.post("/api/auth/register", async (req, res) => {
     try {

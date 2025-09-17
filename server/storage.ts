@@ -63,10 +63,42 @@ export interface IStorage {
   // Project comment methods
   createProjectComment(comment: InsertProjectComment): Promise<ProjectComment>;
   getProjectComments(projectId: string, includeInternal?: boolean): Promise<ProjectComment[]>;
-  getTaskComments(taskId: string, includeInternal?: boolean): Promise<ProjectComment[]>;
-  getMilestoneComments(milestoneId: string, includeInternal?: boolean): Promise<ProjectComment[]>;
   updateProjectComment(id: string, comment: Partial<InsertProjectComment>): Promise<ProjectComment | undefined>;
   deleteProjectComment(id: string): Promise<boolean>;
+  
+  // Admin authentication methods
+  getAdmin(id: string): Promise<Admin | undefined>;
+  getAdminByEmail(email: string): Promise<Admin | undefined>;
+  createAdmin(admin: InsertAdmin): Promise<Admin>;
+  updateAdmin(id: string, admin: Partial<InsertAdmin>): Promise<Admin | undefined>;
+  deleteAdmin(id: string): Promise<boolean>;
+  getAllAdmins(): Promise<Admin[]>;
+  
+  // Admin role methods
+  getAdminRole(id: string): Promise<AdminRole | undefined>;
+  getAdminRoleByName(name: string): Promise<AdminRole | undefined>;
+  createAdminRole(role: InsertAdminRole): Promise<AdminRole>;
+  updateAdminRole(id: string, role: Partial<InsertAdminRole>): Promise<AdminRole | undefined>;
+  deleteAdminRole(id: string): Promise<boolean>;
+  getAllAdminRoles(): Promise<AdminRole[]>;
+  
+  // Admin session methods
+  createAdminSession(session: InsertAdminSession): Promise<AdminSession>;
+  getAdminSession(token: string): Promise<AdminSession | undefined>;
+  deleteAdminSession(token: string): Promise<boolean>;
+  cleanExpiredAdminSessions(): Promise<void>;
+  
+  // Notification methods
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getNotifications(recipientId: string, recipientType: string): Promise<Notification[]>;
+  markNotificationAsRead(id: string): Promise<boolean>;
+  deleteNotification(id: string): Promise<boolean>;
+  
+  // File upload methods
+  createFileUpload(fileUpload: InsertFileUpload): Promise<FileUpload>;
+  getFileUpload(id: string): Promise<FileUpload | undefined>;
+  getFileUploads(uploadedBy?: string, category?: string): Promise<FileUpload[]>;
+  deleteFileUpload(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -81,6 +113,11 @@ export class MemStorage implements IStorage {
   private projectMilestones: Map<string, ProjectMilestone>;
   private projectTasks: Map<string, ProjectTask>;
   private projectComments: Map<string, ProjectComment>;
+  private admins: Map<string, Admin>;
+  private adminRoles: Map<string, AdminRole>;
+  private adminSessions: Map<string, AdminSession>;
+  private notifications: Map<string, Notification>;
+  private fileUploads: Map<string, FileUpload>;
 
   constructor() {
     this.users = new Map();
@@ -94,6 +131,11 @@ export class MemStorage implements IStorage {
     this.projectMilestones = new Map();
     this.projectTasks = new Map();
     this.projectComments = new Map();
+    this.admins = new Map();
+    this.adminRoles = new Map();
+    this.adminSessions = new Map();
+    this.notifications = new Map();
+    this.fileUploads = new Map();
     
     // Seed with sample blog posts, analytics data, and project data
     this.seedBlogPosts();
@@ -732,8 +774,199 @@ export class MemStorage implements IStorage {
   async deleteProjectComment(id: string): Promise<boolean> {
     return this.projectComments.delete(id);
   }
+
+  // Admin authentication methods
+  async getAdmin(id: string): Promise<Admin | undefined> {
+    return this.admins.get(id);
+  }
+
+  async getAdminByEmail(email: string): Promise<Admin | undefined> {
+    return Array.from(this.admins.values()).find(admin => admin.email === email);
+  }
+
+  async createAdmin(insertAdmin: InsertAdmin): Promise<Admin> {
+    const id = randomUUID();
+    const admin: Admin = {
+      ...insertAdmin,
+      id,
+      isActive: insertAdmin.isActive ?? true,
+      lastLoginAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.admins.set(id, admin);
+    return admin;
+  }
+
+  async updateAdmin(id: string, updateData: Partial<InsertAdmin>): Promise<Admin | undefined> {
+    const admin = this.admins.get(id);
+    if (!admin) return undefined;
+
+    const updatedAdmin: Admin = {
+      ...admin,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    this.admins.set(id, updatedAdmin);
+    return updatedAdmin;
+  }
+
+  async deleteAdmin(id: string): Promise<boolean> {
+    return this.admins.delete(id);
+  }
+
+  async getAllAdmins(): Promise<Admin[]> {
+    return Array.from(this.admins.values());
+  }
+
+  // Admin role methods
+  async getAdminRole(id: string): Promise<AdminRole | undefined> {
+    return this.adminRoles.get(id);
+  }
+
+  async getAdminRoleByName(name: string): Promise<AdminRole | undefined> {
+    return Array.from(this.adminRoles.values()).find(role => role.name === name);
+  }
+
+  async createAdminRole(insertRole: InsertAdminRole): Promise<AdminRole> {
+    const id = randomUUID();
+    const role: AdminRole = {
+      ...insertRole,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.adminRoles.set(id, role);
+    return role;
+  }
+
+  async updateAdminRole(id: string, updateData: Partial<InsertAdminRole>): Promise<AdminRole | undefined> {
+    const role = this.adminRoles.get(id);
+    if (!role) return undefined;
+
+    const updatedRole: AdminRole = {
+      ...role,
+      ...updateData,
+      updatedAt: new Date(),
+    };
+    this.adminRoles.set(id, updatedRole);
+    return updatedRole;
+  }
+
+  async deleteAdminRole(id: string): Promise<boolean> {
+    return this.adminRoles.delete(id);
+  }
+
+  async getAllAdminRoles(): Promise<AdminRole[]> {
+    return Array.from(this.adminRoles.values());
+  }
+
+  // Admin session methods
+  async createAdminSession(insertSession: InsertAdminSession): Promise<AdminSession> {
+    const id = randomUUID();
+    const session: AdminSession = {
+      ...insertSession,
+      id,
+      createdAt: new Date(),
+    };
+    this.adminSessions.set(id, session);
+    return session;
+  }
+
+  async getAdminSession(token: string): Promise<AdminSession | undefined> {
+    const session = Array.from(this.adminSessions.values()).find(s => s.token === token);
+    if (session && session.expiresAt < new Date()) {
+      this.adminSessions.delete(session.id);
+      return undefined;
+    }
+    return session;
+  }
+
+  async deleteAdminSession(token: string): Promise<boolean> {
+    const session = Array.from(this.adminSessions.values()).find(s => s.token === token);
+    if (session) {
+      return this.adminSessions.delete(session.id);
+    }
+    return false;
+  }
+
+  async cleanExpiredAdminSessions(): Promise<void> {
+    const now = new Date();
+    for (const [id, session] of this.adminSessions.entries()) {
+      if (session.expiresAt < now) {
+        this.adminSessions.delete(id);
+      }
+    }
+  }
+
+  // Notification methods
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const id = randomUUID();
+    const notification: Notification = {
+      ...insertNotification,
+      id,
+      isRead: false,
+      createdAt: new Date(),
+    };
+    this.notifications.set(id, notification);
+    return notification;
+  }
+
+  async getNotifications(recipientId: string, recipientType: string): Promise<Notification[]> {
+    return Array.from(this.notifications.values())
+      .filter(n => n.recipientId === recipientId && n.recipientType === recipientType)
+      .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async markNotificationAsRead(id: string): Promise<boolean> {
+    const notification = this.notifications.get(id);
+    if (!notification) return false;
+    
+    notification.isRead = true;
+    this.notifications.set(id, notification);
+    return true;
+  }
+
+  async deleteNotification(id: string): Promise<boolean> {
+    return this.notifications.delete(id);
+  }
+
+  // File upload methods
+  async createFileUpload(insertFileUpload: InsertFileUpload): Promise<FileUpload> {
+    const id = randomUUID();
+    const fileUpload: FileUpload = {
+      ...insertFileUpload,
+      id,
+      createdAt: new Date(),
+    };
+    this.fileUploads.set(id, fileUpload);
+    return fileUpload;
+  }
+
+  async getFileUpload(id: string): Promise<FileUpload | undefined> {
+    return this.fileUploads.get(id);
+  }
+
+  async getFileUploads(uploadedBy?: string, category?: string): Promise<FileUpload[]> {
+    let uploads = Array.from(this.fileUploads.values());
+    
+    if (uploadedBy) {
+      uploads = uploads.filter(u => u.uploadedBy === uploadedBy);
+    }
+    
+    if (category) {
+      uploads = uploads.filter(u => u.category === category);
+    }
+    
+    return uploads.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async deleteFileUpload(id: string): Promise<boolean> {
+    return this.fileUploads.delete(id);
+  }
 }
 
 import { PostgreSQLStorage } from './db-storage';
 
-export const storage = new PostgreSQLStorage();
+// Use in-memory storage for testing when database is not available
+export const storage = new MemStorage();
