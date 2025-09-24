@@ -17,11 +17,29 @@ export class PostgreSQLStorage implements IStorage {
 
   private async seedAdminData() {
     try {
-      // Check if admin data already exists
-      const existingRoles = await db.select().from(adminRoles).limit(1);
-      if (existingRoles.length > 0) return;
+      // If at least one admin exists, nothing to do
+      const existingAdmins = await db.select().from(admins).limit(1);
+      if (existingAdmins.length > 0) return;
 
-      await seedAdminData();
+      // Ensure roles exist (create if missing)
+      const existingRoles = await db.select().from(adminRoles).limit(1);
+      if (existingRoles.length === 0) {
+        await seedAdminData();
+        return;
+      }
+
+      // Roles exist but no admin: create default super admin
+      const superRole = await this.getAdminRoleByName('super_admin');
+      const roleId = superRole?.id || existingRoles[0].id;
+      const defaultPassword = await bcrypt.hash('admin123', 12);
+      await this.createAdmin({
+        firstName: 'Super',
+        lastName: 'Admin',
+        email: 'admin@tutsindigital.com',
+        password: defaultPassword,
+        roleId,
+        isActive: true,
+      });
     } catch (error) {
       console.error("Error seeding admin data:", error);
     }
@@ -546,11 +564,13 @@ export class PostgreSQLStorage implements IStorage {
 
   // Admin methods implementation
   async createAdmin(adminData: any): Promise<any> {
-    const hashedPassword = await bcrypt.hash(adminData.password, 10);
+    // Avoid double-hashing if password already looks like a bcrypt hash
+    const needsHash = typeof adminData.password === 'string' && !adminData.password.startsWith('$2');
+    const password = needsHash ? await bcrypt.hash(adminData.password, 10) : adminData.password;
     const result = await db.insert(admins).values({
       id: randomUUID(),
       ...adminData,
-      password: hashedPassword,
+      password,
     }).returning();
     return result[0];
   }
@@ -570,7 +590,7 @@ export class PostgreSQLStorage implements IStorage {
   }
 
   async updateAdmin(id: string, updateData: any): Promise<any> {
-    if (updateData.password) {
+    if (updateData.password && !String(updateData.password).startsWith('$2')) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
     const result = await db.update(admins)
