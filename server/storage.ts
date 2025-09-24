@@ -1,3 +1,5 @@
+import { setDefaultResultOrder } from "node:dns";
+setDefaultResultOrder("ipv4first");
 import { type User, type InsertUser, type Client, type InsertClient, type ClientSession, type InsertClientSession, type BlogPost, type InsertBlogPost, type ContactSubmission, type InsertContactSubmission, type PageView, type InsertPageView, type WebsiteMetrics, type InsertWebsiteMetrics, type Project, type InsertProject, type ProjectMilestone, type InsertProjectMilestone, type ProjectTask, type InsertProjectTask, type ProjectComment, type InsertProjectComment } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";

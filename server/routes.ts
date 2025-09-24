@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setDefaultResultOrder } from "node:dns";
+setDefaultResultOrder("ipv4first");
 import { insertBlogPostSchema, insertContactSubmissionSchema, insertClientSchema, loginClientSchema, insertPageViewSchema, insertProjectSchema, insertProjectMilestoneSchema, insertProjectTaskSchema, insertProjectCommentSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
