@@ -23,10 +23,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     try {
       const { Client } = await import("pg");
-      const client = new Client({
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
-      });
+      const { lookup } = await import("node:dns/promises");
+      const dbUrl = new URL(process.env.DATABASE_URL);
+      let host = dbUrl.hostname;
+      try {
+        const { address } = await lookup(host, { family: 4 });
+        host = address;
+      } catch (_e) {
+        // fallback to original host if IPv4 lookup fails
+      }
+      const port = Number(dbUrl.port || 5432);
+      const user = decodeURIComponent(dbUrl.username);
+      const password = decodeURIComponent(dbUrl.password);
+      const database = dbUrl.pathname.replace(/^\//, "") || "postgres";
+      const client = new Client({ host, port, user, password, database, ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined });
       await client.connect();
       const result = await client.query("SELECT 1 as ok");
       await client.end();
