@@ -13,7 +13,7 @@ if [ "${USE_DB}" = "true" ] && [ -n "${DATABASE_URL}" ]; then
   URL_WITH_SSL=$(printf "%s" "$URL_WITH_SSL" | sed 's#^postgresql://#postgres://#')
 
   # Resolve hostname to IPv4 and replace host to avoid IPv6 ENETUNREACH
-  RESOLVED_URL=$(URL_IN="$URL_WITH_SSL" node -e "
+  RESOLVED=$(URL_IN="$URL_WITH_SSL" node -e "
     const { lookup } = require('dns').promises; 
     const u = new URL(process.env.URL_IN);
     (async () => {
@@ -26,7 +26,9 @@ if [ "${USE_DB}" = "true" ] && [ -n "${DATABASE_URL}" ]; then
       }
     })();
   ")
-  export DATABASE_URL="$RESOLVED_URL"
+  export DATABASE_URL="$RESOLVED"
+  # Also export DATABASE_HOST (IPv4) for server/db.ts to prefer
+  export DATABASE_HOST=$(printf "%s" "$DATABASE_URL" | sed -E 's#^[^/]+//([^:/]+).*#\1#')
 
   # Try to enable pgcrypto extension for gen_random_uuid()
   node -e "const { Client } = require('pg');(async()=>{const c=new Client({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});try{await c.connect();await c.query('create extension if not exists pgcrypto');console.log('pgcrypto enabled or already present');}catch(e){console.error('pgcrypto enable skipped:', e.message);}finally{try{await c.end();}catch(e){}}})()" || true
