@@ -966,7 +966,22 @@ export class MemStorage implements IStorage {
   }
 }
 
-import { PostgreSQLStorage } from './db-storage';
+// Choose storage implementation.
+// Default to in-memory storage. If USE_DB=true and DATABASE_URL is present,
+// try to use the PostgreSQL-backed storage.
+let storageImpl: IStorage = new MemStorage();
 
-// Use in-memory storage for testing when database is not available
-export const storage = new MemStorage();
+if (process.env.USE_DB === "true" && process.env.DATABASE_URL) {
+  try {
+    const mod = await import("./db-storage");
+    const PostgreSQLStorage = (mod as any).PostgreSQLStorage;
+    if (PostgreSQLStorage) {
+      storageImpl = new PostgreSQLStorage();
+    }
+  } catch (_e) {
+    // fall back to MemStorage if db-storage cannot be loaded
+    storageImpl = new MemStorage();
+  }
+}
+
+export const storage = storageImpl;

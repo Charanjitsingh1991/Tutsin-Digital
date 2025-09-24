@@ -14,6 +14,23 @@ function generateSessionToken(): string {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Lightweight DB connectivity check (does not import db.ts)
+  app.get("/api/system/db-check", async (_req, res) => {
+    if (!process.env.DATABASE_URL) {
+      return res.json({ connected: false, reason: "DATABASE_URL not set" });
+    }
+    try {
+      const { Client } = await import("pg");
+      const client = new Client({ connectionString: process.env.DATABASE_URL });
+      await client.connect();
+      const result = await client.query("SELECT 1 as ok");
+      await client.end();
+      return res.json({ connected: true, result: result.rows[0] });
+    } catch (e: any) {
+      return res.json({ connected: false, error: e?.message || String(e) });
+    }
+  });
+
   // Register admin routes first
   await registerAdminRoutes(app);
   
