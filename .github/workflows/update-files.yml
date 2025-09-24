@@ -1,0 +1,84 @@
+name: Update files via command
+
+on:
+  workflow_dispatch:
+    inputs:
+      changes:
+        description: 'JSON array of file changes. Example: [{"path":"README.md","content":"SGVsbG8gV29ybGQh","encoding":"base64"}]'
+        required: true
+        type: string
+      branch:
+        description: 'Branch name to create (for PR). Example: chore/automated-update'
+        required: false
+        default: 'chore/automated-update'
+        type: string
+      commit_message:
+        description: 'Commit message'
+        required: false
+        default: 'chore: automated update via workflow'
+        type: string
+      pr_title:
+        description: 'Pull Request title'
+        required: false
+        default: 'Automated update via workflow'
+        type: string
+      pr_body:
+        description: 'Pull Request body'
+        required: false
+        default: 'This PR was created by the Update files workflow.'
+        type: string
+      base_branch:
+        description: 'Base branch to merge into (usually main)'
+        required: false
+        default: 'main'
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse changes and write files
+        id: write
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHANGES_JSON='${{ inputs.changes }}'
+          echo "$CHANGES_JSON" | jq -c '.[]' | while read -r item; do
+            PATH_=$(echo "$item" | jq -r '.path')
+            CONTENT=$(echo "$item" | jq -r '.content')
+            ENCODING=$(echo "$item" | jq -r '.encoding // "utf8"')
+
+            # Ensure directory exists
+            DIR=$(dirname "$PATH_")
+            mkdir -p "$DIR"
+
+            if [ "$ENCODING" = "base64" ]; then
+              echo "$CONTENT" | base64 -d > "$PATH_"
+            else
+              printf "%s" "$CONTENT" > "$PATH_"
+            fi
+
+            echo "Wrote $PATH_"
+          done
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: ${{ inputs.commit_message }}
+          title: ${{ inputs.pr_title }}
+          body: ${{ inputs.pr_body }}
+          branch: ${{ inputs.branch }}
+          base: ${{ inputs.base_branch }}
+          add-paths: |
+            .
+          signoff: false
+          delete-branch: true
