@@ -21,7 +21,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     try {
       const { Client } = await import("pg");
-      const client = new Client({ connectionString: process.env.DATABASE_URL });
+      const client = new Client({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
+      });
       await client.connect();
       const result = await client.query("SELECT 1 as ok");
       await client.end();

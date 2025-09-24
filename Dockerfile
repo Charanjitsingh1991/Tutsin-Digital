@@ -16,6 +16,9 @@ COPY --from=builder /app/dist /app/dist
 COPY --from=builder /app/node_modules /app/node_modules
 COPY --from=builder /app/package.json /app/package.json
 COPY --from=builder /app/entrypoint.sh /app/entrypoint.sh
+COPY --from=builder /app/drizzle.config.ts /app/drizzle.config.ts
+COPY --from=builder /app/tsconfig.json /app/tsconfig.json
+COPY --from=builder /app/shared /app/shared
 RUN chmod +x /app/entrypoint.sh
 # Expose port
 EXPOSE 5000
