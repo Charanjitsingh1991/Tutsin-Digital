@@ -12,23 +12,37 @@ if [ "${USE_DB}" = "true" ] && [ -n "${DATABASE_URL}" ]; then
   fi
   URL_WITH_SSL=$(printf "%s" "$URL_WITH_SSL" | sed 's#^postgresql://#postgres://#')
 
-  # Resolve hostname to IPv4 and replace host to avoid IPv6 ENETUNREACH
-  RESOLVED=$(URL_IN="$URL_WITH_SSL" node -e "
-    const { lookup } = require('dns').promises; 
-    const u = new URL(process.env.URL_IN);
+  # Parse URL, resolve IPv4, and export PG* env vars to force IPv4 for node-postgres/drizzle
+  eval $(URL_IN="$URL_WITH_SSL" node -e '
     (async () => {
+      const { lookup } = require("dns").promises;
+      const u = new URL(process.env.URL_IN);
+      let host = u.hostname;
       try {
-        const { address } = await lookup(u.hostname, { family: 4 });
-        u.hostname = address;
-        process.stdout.write(u.toString());
-      } catch {
-        process.stdout.write(process.env.URL_IN);
-      }
+        const { address } = await lookup(host, { family: 4 });
+        host = address;
+      } catch {}
+      const port = u.port || "5432";
+      const user = decodeURIComponent(u.username);
+      const pass = decodeURIComponent(u.password);
+      const db = (u.pathname || "/postgres").replace(/^\//, "");
+      const sslmode = (u.searchParams.get("sslmode") || "require");
+      const out = [];
+      out.push(`export PGHOST=${host}`);
+      out.push(`export PGHOSTADDR=${host}`);
+      out.push(`export PGPORT=${port}`);
+      out.push(`export PGUSER=${JSON.stringify(user)}`);
+      out.push(`export PGPASSWORD=${JSON.stringify(pass)}`);
+      out.push(`export PGDATABASE=${JSON.stringify(db)}`);
+      out.push(`export PGSSLMODE=${sslmode}`);
+      // Also set DATABASE_HOST for app runtime
+      out.push(`export DATABASE_HOST=${host}`);
+      // Recompose normalized connection string using IPv4
+      u.hostname = host;
+      console.log(out.join("\n"));
+      console.log(`export DATABASE_URL=${JSON.stringify(u.toString())}`);
     })();
-  ")
-  export DATABASE_URL="$RESOLVED"
-  # Also export DATABASE_HOST (IPv4) for server/db.ts to prefer
-  export DATABASE_HOST=$(printf "%s" "$DATABASE_URL" | sed -E 's#^[^/]+//([^:/]+).*#\1#')
+  ')
 
   # Try to enable pgcrypto extension for gen_random_uuid()
   node -e "const { Client } = require('pg');(async()=>{const c=new Client({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});try{await c.connect();await c.query('create extension if not exists pgcrypto');console.log('pgcrypto enabled or already present');}catch(e){console.error('pgcrypto enable skipped:', e.message);}finally{try{await c.end();}catch(e){}}})()" || true
