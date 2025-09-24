@@ -1,0 +1,88 @@
+name: Update files (direct commit)
+
+on:
+  workflow_dispatch:
+    inputs:
+      changes:
+        description: 'JSON array of file changes. Example: [{"path":"README.md","content":"SGVsbG8gV29ybGQh","encoding":"base64"}]'
+        required: true
+        type: string
+      branch:
+        description: 'Branch to commit to (default: main)'
+        required: false
+        default: 'main'
+        type: string
+      commit_message:
+        description: 'Commit message'
+        required: false
+        default: 'chore: automated direct update via workflow'
+        type: string
+      author_name:
+        description: 'Git author name (optional)'
+        required: false
+        default: 'github-actions[bot]'
+        type: string
+      author_email:
+        description: 'Git author email (optional)'
+        required: false
+        default: '41898282+github-actions[bot]@users.noreply.github.com'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          ref: ${{ inputs.branch }}
+
+      - name: Parse changes and write files
+        id: write
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHANGES_JSON='${{ inputs.changes }}'
+          echo "$CHANGES_JSON" | jq -c '.[]' | while read -r item; do
+            PATH_=$(echo "$item" | jq -r '.path')
+            CONTENT=$(echo "$item" | jq -r '.content')
+            ENCODING=$(echo "$item" | jq -r '.encoding // "utf8"')
+
+            # Ensure directory exists
+            DIR=$(dirname "$PATH_")
+            mkdir -p "$DIR"
+
+            if [ "$ENCODING" = "base64" ]; then
+              echo "$CONTENT" | base64 -d > "$PATH_"
+            else
+              printf "%s" "$CONTENT" > "$PATH_"
+            fi
+
+            echo "Wrote $PATH_"
+          done
+
+      - name: Commit and push
+        shell: bash
+        env:
+          BRANCH: ${{ inputs.branch }}
+          COMMIT_MESSAGE: ${{ inputs.commit_message }}
+          AUTHOR_NAME: ${{ inputs.author_name }}
+          AUTHOR_EMAIL: ${{ inputs.author_email }}
+        run: |
+          set -euo pipefail
+          git config user.name "${AUTHOR_NAME}"
+          git config user.email "${AUTHOR_EMAIL}"
+          git add -A
+          # Only commit if there are changes
+          if [ -n "$(git status --porcelain)" ]; then
+            git commit -m "${COMMIT_MESSAGE}"
+            git push origin "${BRANCH}"
+            echo "Changes pushed to ${BRANCH}"
+          else
+            echo "No changes to commit"
+          fi
