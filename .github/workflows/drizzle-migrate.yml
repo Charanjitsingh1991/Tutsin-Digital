@@ -1,0 +1,31 @@
+name: Drizzle Migrate (Supabase)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Ensure pgcrypto extension
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          node -e "const { Client } = require('pg');(async()=>{const c=new Client({connectionString:process.env.DATABASE_URL,ssl:{rejectUnauthorized:false}});await c.connect();await c.query('create extension if not exists pgcrypto');console.log('pgcrypto ok');await c.end();})().catch(e=>{console.error(e);process.exit(1)});"
+
+      - name: Run Drizzle push
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: npx drizzle-kit push
+
