@@ -1,0 +1,32 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    container_name: tutsin_app
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      USE_DB: "true"
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SSL: "true"
+    # Uncomment to run with a local Postgres service instead of Supabase:
+    # depends_on:
+    #   - db
+
+  # Local Postgres (optional). If you want local DB instead of Supabase:
+  # db:
+  #   image: postgres:16
+  #   container_name: tutsin_db
+  #   environment:
+  #     POSTGRES_USER: tutsin_user
+  #     POSTGRES_PASSWORD: tutsin_password
+  #     POSTGRES_DB: tutsin_digital
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+
+# volumes:
+#   db_data:

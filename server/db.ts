@@ -8,6 +8,8 @@ if (!process.env.DATABASE_URL) {
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  // Enable SSL for managed Postgres providers like Supabase/Neon when requested
+  ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
 });
 
 export const db = drizzle(pool, { schema });
